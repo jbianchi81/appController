@@ -1,0 +1,34 @@
+{
+	"database":
+	{
+	  "user": "",
+	  "host": "",
+	  "database": "",
+	  "password": "",
+	  "port": 5432
+	},
+	"user": {
+		"username": "",
+		"password": "",
+		"token": ""
+	},
+	"app_list":{
+		"appname": {
+			"dir": "app/location",
+			"script": "executable.js",
+			"webdir": "/webapp/location",
+			"initpath": "/init/path",
+			"testpath": "/",
+			"logfile": "logs/appname.log",
+			"port": "3001"
+		}
+    },
+	"rest":{
+		"port":3000,
+		"skip_authentication": false,
+		"base_url": "http://localhost:3000/"
+	},
+	"app_base_dir": "../",
+	"timeout": 20000
+}
+
