@@ -7,6 +7,7 @@ module.exports = function (app,config,pool) {   // needs: app.use(express.urlenc
 	var flash = require('express-flash')
 	const crypto = require('crypto')
 	const querystring = require('querystring');
+	const redirect_url = (config.rest.redirect_url) ? config.rest.redirect_url : "login"
 
 	var module = {}
 	app.use(session({
@@ -14,8 +15,10 @@ module.exports = function (app,config,pool) {   // needs: app.use(express.urlenc
 		 secret: 'secret', 
 		 key: "id",
 		genid: (req) => {
-			console.log('Inside session middleware genid function')
-			console.log(`Request object sessionID from client: ${req.sessionID}`)
+			if(config.verbose) {
+				console.log('Inside session middleware genid function')
+				console.log(`Request object sessionID from client: ${req.sessionID}`)
+			}
 			if(req.sessionID) {
 				return req.sessionID
 			} else {
@@ -42,13 +45,19 @@ module.exports = function (app,config,pool) {   // needs: app.use(express.urlenc
 			authenticate(password) {
 				var digest = crypto.createHash('sha256').update(password.toString()).digest('hex')
 				if(!this.password) {
-					console.log("no password")
+					if(config.verbose) {
+						console.log("no password")
+					}
 					return true
 				} else if( digest == this.password.toString()) {
-					console.log("password ok")
+					if(config.verbose) {
+						console.log("password ok")
+					}
 					return true
 				} else {
-					console.log("password incorrect")
+					if(config.verbose) {
+						console.log("password incorrect")
+					}
 					return false
 				}
 			}
@@ -57,10 +66,14 @@ module.exports = function (app,config,pool) {   // needs: app.use(express.urlenc
 		authenticate: function(user,password) {
 			var digest = crypto.createHash('sha256').update(password.toString()).digest('hex')
 			if( digest == user.password.toString()) {
-				console.log("password ok")
+				if(config.verbose) {
+					console.log("password ok")
+				}
 				return true
 			} else {
-				console.log("password incorrect")
+				if(config.verbose) {
+					console.log("password incorrect")
+				}
 				return false
 			}
 		},
@@ -76,27 +89,30 @@ module.exports = function (app,config,pool) {   // needs: app.use(express.urlenc
 					return new module.User.user(result.rows[0])
 				}
 			})
-			.catch(e=>{
-				console.error(e)
-				return
-			})
+			// .catch(e=>{
+			// 	console.error(e)
+			// 	return
+			// })
 		},
 		findById: function(id) {
 			return pool.query("SELECT id, name, role, encode(pass_enc,'escape') AS password, encode(token,'escape') AS token FROM users WHERE id=$1", [id])
 			.then(result=>{
 				if(!result) {
+					console.error("findById: user query failed")
 					return
 				}
 				if(result.rows.length==0) {
+					console.error("findById: user query returned 0 rows")
 					return
 				} else {
+					// console.log("findById: user query returned user " + result.rows[0].name)
 					return new module.User.user(result.rows[0])
 				}
 			})
-			.catch(e=>{
-				console.error(e)
-				return
-			})	
+			// .catch(e=>{
+			// 	console.error(e)
+			// 	return
+			// })	
 			
 		},
 		findByJWT: function(token) {
@@ -112,10 +128,10 @@ module.exports = function (app,config,pool) {   // needs: app.use(express.urlenc
 					return new module.User.user(result.rows[0])
 				}
 			})
-			.catch(e=>{
-				console.error(e)
-				return
-			})	
+			// .catch(e=>{
+			// 	console.error(e)
+			// 	return
+			// })	
 		}
 	}
 	// configure passport.js to use the local strategy
@@ -149,14 +165,20 @@ module.exports = function (app,config,pool) {   // needs: app.use(express.urlenc
 			}
 			done(null,user)
 		})
+		.catch(e=>{
+			console.log(e)
+			done(e,null)
+		})
 	}))
 
 	module.loginReject = function (req,mensaje,done) { 
-		console.log("rejecting login")
+		if(config.verbose) {
+			console.log("rejecting login")
+		}
 		if(req.headers['content-type'] == "application/x-www-form-urlencoded" || req.headers['content-type'] == "multipart/form-data") {
 			var path = (req.body.path) ? req.body.path : ""
 			//~ console.log("redirecting to " + path)
-			req.res.redirect("login?unauthorized=true&message="+mensaje+"&path="+path)
+			req.res.redirect(redirect_url + "?unauthorized=true&message="+mensaje+"&path="+path)
 		} else {
 			req.res.status(401).send({message:mensaje})
 		}
@@ -174,10 +196,13 @@ module.exports = function (app,config,pool) {   // needs: app.use(express.urlenc
 				user.authenticated = true
 				done(null, user);
 			} else {
-				// console.error("User not found")
-				// done(null,null)
-				done(new Error("user not found"),null)
+				console.error("User not found")
+				done(null,null)
+				// done(new Error("user not found"),null)
 			}
+		})
+		.catch(e=>{
+			done(new Error(e),null)
 		})
 	}); 
 
@@ -187,7 +212,13 @@ module.exports = function (app,config,pool) {   // needs: app.use(express.urlenc
 		if(config.rest.skip_authentication) {
 			return next()
 		}
-		var user = await module.extractAndValidateToken(req) // try authentication by token (overrides session)
+		try {
+			var user = await module.extractAndValidateToken(req) // try authentication by token (overrides session)
+		} catch (e) {
+			console.error(e)
+			res.status(500).send("Internal Server Error")
+			return
+		}
 		if(user) {
 			req.user = user
 			if(config.verbose) {
@@ -225,7 +256,13 @@ module.exports = function (app,config,pool) {   // needs: app.use(express.urlenc
 		}
 		var user
 		if(!req.user) {
-			user = await module.extractAndValidateToken(req) // try authentication by token (overrides session)
+			try {
+				var user = await module.extractAndValidateToken(req) // try authentication by token (overrides session)
+			} catch (e) {
+				console.error(e)
+				res.status(500).send("Internal Server Error")
+				return
+			}
 		}
 		if(user) {
 			req.user = user
@@ -260,13 +297,14 @@ module.exports = function (app,config,pool) {   // needs: app.use(express.urlenc
 		return next()
 	}
 
-
 	module.isAuthenticatedView = async function (req,res,next) {
 		if(config.verbose) {
 			console.log("isAuthenticatedView")
 		}
 		if(config.rest.skip_authentication) {
-			console.log("Skip authentication")
+			if(config.verbose) {
+				console.log("Skip authentication")
+			}
 			return next()
 		}
 		//~ console.log(req)
@@ -278,7 +316,13 @@ module.exports = function (app,config,pool) {   // needs: app.use(express.urlenc
 		} else {
 			//~ console.log("no query string")
 		}
-		var user = await module.extractAndValidateToken(req) // try authentication by token (overrides session)
+		try {
+			var user = await module.extractAndValidateToken(req) // try authentication by token (overrides session)
+		} catch (e) {
+			console.error(e)
+			res.status(500).send("Internal Server Error")
+			return
+		}
 		if(user) {
 			req.user = user
 			if(config.verbose) {
@@ -286,11 +330,11 @@ module.exports = function (app,config,pool) {   // needs: app.use(express.urlenc
 			}	
 		}
 		if(!req.user) {
-			res.redirect('login?redirected=true&path=' + path)
+			res.redirect(redirect_url + '?redirected=true&path=' + path)
 			return
 		}
 		if(!req.user.authenticated) {
-			res.redirect('login?redirected=true&path=' + path)
+			res.redirect(redirect_url + '?redirected=true&path=' + path)
 			return
 		} else if(req.user.role!="writer" && req.user.role!="admin") {
 			req.query.writer = false
@@ -314,7 +358,13 @@ module.exports = function (app,config,pool) {   // needs: app.use(express.urlenc
 		if(!req.query) {
 			req.query = {}
 		}
-		var user = await module.extractAndValidateToken(req) // try authentication by token (overrides session)
+		try {
+			var user = await module.extractAndValidateToken(req) // try authentication by token (overrides session)
+		} catch (e) {
+			console.error(e)
+			res.status(500).send("Internal Server Error")
+			return
+		}
 		if(user) {
 			req.user = user
 			if(config.verbose) {
@@ -344,7 +394,13 @@ module.exports = function (app,config,pool) {   // needs: app.use(express.urlenc
 		if(config.rest.skip_authentication) {
 			return next()
 		}
-		var user = await module.extractAndValidateToken(req) // try authentication by token (overrides session)
+		try {
+			var user = await module.extractAndValidateToken(req) // try authentication by token (overrides session)
+		} catch (e) {
+			console.error(e)
+			res.status(500).send("Internal Server Error")
+			return
+		}
 		if(user) {
 			req.user = user
 			if(config.verbose) {
@@ -353,17 +409,23 @@ module.exports = function (app,config,pool) {   // needs: app.use(express.urlenc
 		}
 		logRequest(req)
 		if(!req.user) {
-			console.log("user not logged in")
+			if(config.verbose) {
+				console.log("user not logged in")
+			}
 			res.status(401).send("Unauthorized")
 			return
 		}
 		if(!req.user.authenticated) {
-			console.log("user not authenticated")
+			if(config.verbose) {
+				console.log("user not authenticated")
+			}
 			res.status(401).send("Unauthorized")
 			return
 		}
 		if(req.user.role!="writer" && req.user.role!="admin") {
-			console.log("unauthorized role")
+			if(config.verbose) {
+				console.log("unathorized role")
+			}
 			res.status(401).send("Unauthorized")
 			return
 		}
@@ -377,15 +439,25 @@ module.exports = function (app,config,pool) {   // needs: app.use(express.urlenc
 			//~ querystring += "&class=" + req.query.class
 		//~ }
 		if(req.query) {
-			console.log("adding query string")
+			if(config.verbose) {
+				console.log("adding query string")
+			}
 			query_string += "&" + querystring.stringify(req.query)
 		} else {
-			console.log("no query string")
+			if(config.verbose) {
+				console.log("no query string")
+			}
 		}
 		if(config.rest.skip_authentication) {
 			return next()
 		}
-		var user = await module.extractAndValidateToken(req) // try authentication by token (overrides session)
+		try {
+			var user = await module.extractAndValidateToken(req) // try authentication by token (overrides session)
+		} catch (e) {
+			console.error(e)
+			res.status(500).send("Internal Server Error")
+			return
+		}
 		if(user) {
 			req.user = user
 			if(config.verbose) {
@@ -394,16 +466,18 @@ module.exports = function (app,config,pool) {   // needs: app.use(express.urlenc
 		}
 		logRequest(req)
 		if(!req.user) {
-			res.redirect('login?redirected=true&path=' + path + query_string)
+			res.redirect(redirect_url + '?redirected=true&path=' + path + query_string)
 			return
 		}
 		if(!req.user.authenticated) {
-			res.redirect('login?redirected=true&path=' + path  + query_string)
+			res.redirect(redirect_url + '?redirected=true&path=' + path  + query_string)
 			return
 		}
 		if(req.user.role!="writer" && req.user.role!="admin") {
-			console.log("unathorized role")
-			res.redirect('login?redirected=true&path=' + path + "&unauthorized=true"  + query_string)
+			if(config.verbose) {
+				console.log("unathorized role")
+			}
+			res.redirect(redirect_url + '?redirected=true&path=' + path + "&unauthorized=true"  + query_string)
 			return
 		}
 		return next()
@@ -413,8 +487,16 @@ module.exports = function (app,config,pool) {   // needs: app.use(express.urlenc
 		if(config.rest.skip_authentication) {
 			return next()
 		}
-		// console.log({user:req.user})
-		var user = await module.extractAndValidateToken(req) // try authentication by token (overrides session)
+		if(config.verbose) {
+			console.log({user:req.user})
+		}
+		try {
+			var user = await module.extractAndValidateToken(req) // try authentication by token (overrides session)
+		} catch (e) {
+			console.error(e)
+			res.status(500).send("Internal Server Error")
+			return
+		}
 		if(user) {
 			req.user = user
 			if(config.verbose) {
@@ -423,17 +505,23 @@ module.exports = function (app,config,pool) {   // needs: app.use(express.urlenc
 		}
 		logRequest(req)
 		if(!req.user) {
-			console.log("user not logged in")
+			if(config.verbose) {
+				console.log("user not logged in")
+			}
 			res.status(401).send("Unauthorized")
 			return
 		}
 		if(!req.user.authenticated) {
-			console.log("user not authenticated")
+			if(config.verbose) {
+				console.log("user not authenticated")
+			}
 			res.status(401).send("Unauthorized")
 			return
 		}
 		if(req.user.role!="admin") {
-			console.log("unathorized role")
+			if(config.verbose) {
+				console.log("unathorized role")
+			}
 			res.status(401).send("Unauthorized")
 			return
 		}
@@ -443,15 +531,28 @@ module.exports = function (app,config,pool) {   // needs: app.use(express.urlenc
 		var path = (req.route) ? (req.route.path) ? req.route.path.replace(/^\//,"") : "" : "" ;
 		var query_string = ""
 		if(req.query) {
-			console.log("adding query string")
+			if(config.verbose) {
+				console.log("adding query string")
+			}
 			query_string += "&" + querystring.stringify(req.query)
 		} else {
-			console.log("no query string")
+			if(config.verbose) {
+				console.log("no query string")
+			}
 		}
 		if(config.rest.skip_authentication) {
 			return next()
 		}
-		var user = await module.extractAndValidateToken(req) // try authentication by token (overrides session)
+		if(config.verbose) {
+			console.log({user:req.user})
+		}
+		try {
+			var user = await module.extractAndValidateToken(req) // try authentication by token (overrides session)
+		} catch (e) {
+			console.error(e)
+			res.status(500).send("Internal Server Error")
+			return
+		}
 		if(user) {
 			req.user = user
 			if(config.verbose) {
@@ -460,16 +561,18 @@ module.exports = function (app,config,pool) {   // needs: app.use(express.urlenc
 		}
 		logRequest(req)
 		if(!req.user) {
-			res.redirect('login?redirected=true&path=' + path + query_string)
+			res.redirect(redirect_url + '?redirected=true&path=' + path + query_string)
 			return
 		}
 		if(!req.user.authenticated) {
-			res.redirect('login?redirected=true&path=' + path  + query_string)
+			res.redirect(redirect_url + '?redirected=true&path=' + path  + query_string)
 			return
 		}
 		if(req.user.role!="admin") {
-			console.log("unathorized role")
-			res.redirect('login?redirected=true&path=' + path + "&unauthorized=true"  + query_string)
+			if(config.verbose) {
+				console.log("unathorized role")
+			}
+			res.redirect(redirect_url + '?redirected=true&path=' + path + "&unauthorized=true"  + query_string)
 			return
 		}
 		return next()
@@ -488,20 +591,24 @@ module.exports = function (app,config,pool) {   // needs: app.use(express.urlenc
 		return module.User.findByJWT(token)
 		.then(user=>{
 			if(!user) {
-				console.error("User not found by token")
+				if(config.verbose) {
+					console.error("User not found by token")
+				}
 				return
 			} else {
-				console.log("Found username:" + user.username)
+				if(config.verbose) {
+					console.log("Found username:" + user.username)
+				}
 				user.authenticated = true
 				return user
 			}
 		})
-		.catch (e=> {
-			console.error(e.toString())
-			return
-		})
+		// .catch (e=> {
+		// 	console.error(e)
+		// 	return
+		// })
 	}
-	module.extractAndValidateToken = function(req) {
+	module.extractAndValidateToken = async function(req) {
 		var token = module.tokenExtractor(req)
 		if(config.verbose) {
 			console.log("extractAndValidateToken: token:" + token)
