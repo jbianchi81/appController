@@ -92,21 +92,21 @@
                 <td><a target=_blank href="http://localhost:' + app.port + app.initpath + '">' + app.initpath + '</a></td>\
                 <td><a target=_blank href="' + window.location.protocol + "//" + window.location.host + app.webdir + '">' + app.webdir + '</a></td>'
             if (app.status) {
-                switch(app.message.statusCode) {
-                    case "ECONNREFUSED":
+                switch(true) {
+                    case (app.message.statusCode == "ECONNREFUSED"):
                         row += '<td style="color: red;">INACTIVE</td>\
                             <td>\
                                 <a class=app-action href="start/' + app.app_name + '?redirect=../apps">start</a>\
                             </td>'
                         break;
-                    case 504:
+                    case (app.message.statusCode == 504):
                         row += '<td style="color: yellow;">NOT RESPONDING</td>\
                             <td>\
                                 <a class=app-action href="hard_restart/' + app.app_name + '?redirect=../apps">hard_restart</a>\
                                 <a class=app-action href="hard_stop/' + app.app_name + '?redirect=../apps">hard_stop</a>\
                             </td>'
                         break;
-                    case 200:
+                    case (app.message.statusCode < 400):
                         row += '<td style="color: green;">ACTIVE</td>\
                             <td>\
                                 <a class=app-action href="restart/' + app.app_name + '?redirect=../apps">restart</a>\

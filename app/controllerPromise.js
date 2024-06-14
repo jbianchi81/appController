@@ -172,7 +172,7 @@ internal.controller = class {
                  headers: {Authorization: "Bearer " + this.config.user.token}
 			}, res=> {
 				//~ console.log(`statusCode: ${res.statusCode}`)
-				if(res.statusCode == 200) {
+				if(res.statusCode < 400) {
 					//~ console.error("La aplicación " + app + " ya está funcionando")
 					resolve(true)
 				} else {

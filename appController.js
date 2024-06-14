@@ -80,7 +80,7 @@ program
 		}
 		controller.checkAppStatus(options.app)
 		.then(response=>{
-			if(response.statusCode == 200) {
+			if(response.statusCode < 400) {
 				console.log("La aplicación " + app + " está funcionando en el puerto " + app_list[app].port)
 			} else if(response.statusCode == 504) {
 				console.log("La aplicación " + app + " en el puerto " + app_list[app].port + " no responde (timeout)")
