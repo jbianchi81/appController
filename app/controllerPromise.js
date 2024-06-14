@@ -6,6 +6,7 @@ const http = require('http')
 const {spawn, execSync} = require('child_process')
 var ps = require('node-ps-promise');
 const axios = require('axios')
+const path = require('path')
 
 if (!Promise.allSettled) {
     Promise.allSettled = promises =>
@@ -58,12 +59,12 @@ internal.controller = class {
 				var out = fs.openSync(this.app_list[app].logfile, 'w') // a')
 				var err = fs.openSync(this.app_list[app].logfile, 'a')
 				const ff = spawn(this.config.node_command, [this.app_list[app].script], {
-					cwd: this.config.app_base_dir + this.app_list[app].dir,
+					cwd: path.resolve(this.config.app_base_dir,this.app_list[app].dir),
 					stdio: [ 'ignore', out, err ],
 					detached: true
 				})
 				ff.unref();
-				var pidFile = this.config.app_base_dir + this.app_list[app].dir + "/logs/PID"
+				var pidFile = path.resolve(this.config.app_base_dir, this.app_list[app].dir, "logs/PID")
 				fs.writeFileSync(pidFile, ff.pid+'\n', 'utf8')
 				console.log("Se inició la app " + app + " con el PID " + ff.pid)
                 return {status:"success",message:"Se inició la app " + app + " con el PID " + ff.pid}
@@ -123,12 +124,12 @@ internal.controller = class {
                     var out = fs.openSync(this.app_list[app].logfile, 'w') // a')
                     var err = fs.openSync(this.app_list[app].logfile, 'a')
                     const ff = spawn(this.config.node_command, [this.app_list[app].script], {
-                        cwd: this.config.app_base_dir + this.app_list[app].dir,
+                        cwd: path.resolve(this.config.app_base_dir, this.app_list[app].dir),
                         stdio: [ 'ignore', out, err ],
                         detached: true
                     })
                     ff.unref();
-                    var pidFile = this.config.app_base_dir + this.app_list[app].dir + "/logs/PID"
+                    var pidFile = path.resolve(this.config.app_base_dir, this.app_list[app].dir, "logs/PID")
                     fs.writeFileSync(pidFile, ff.pid+'\n', 'utf8')
                     console.log("Se inició la app " + app + " con el PID " + ff.pid)
                     return {status:"success",message:"Se inició la app " + app + " con el PID " + ff.pid}
