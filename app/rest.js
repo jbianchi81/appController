@@ -290,7 +290,7 @@ app.post('/login',passport.authenticate('local'),(req,res)=>{
 	console.log("inside login post")
 	console.log({user:req.user})
 	if(req.headers['content-type'] == "application/x-www-form-urlencoded" || req.headers['content-type'] == "multipart/form-data") {
-		var path = (req.user.role == "admin") ? "apps" : "usuarios/" + req.user.username// (req.query) ? (req.query.path) ? req.query.path : "apps"  : "apps"
+		var path = (req.query && req.query.redirected && req.query.path) ? req.query.path : (req.user.role == "admin") ? "apps" : "usuarios/" + req.user.username// (req.query) ? (req.query.path) ? req.query.path : "apps"  : "apps"
 		console.log("redirecting to " + path)
 		// var query = {}
 		// Object.keys(req.query).forEach(key=> {
