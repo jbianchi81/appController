@@ -382,6 +382,16 @@ app.get('/usuarionuevo',auth.isAdminView,(req,res)=>{
 	userAdmin.newUserForm(req,res)
 })
 
+// is authenticated api
+
+app.get('/isAuthenticated',auth.isAuthenticated, (req,res)=>{  // passport.authenticate('local'),
+	res.send('ok')
+})
+
+app.get('/isWriter', auth.isWriter, (req,res) => {
+	res.send('ok')
+})
+
 /////////////////////////////////////////////////////////////////
 
 app.listen(port, (err) => {
