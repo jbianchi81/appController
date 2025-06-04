@@ -12,12 +12,12 @@ module.exports = function (app,config,pool) {   // needs: app.use(express.urlenc
 	var module = {}
 	app.use(session({
 		 cookie: {
-			maxAge: 3 * 60 * 60 * 1000,
-			secure: true,
-			httpOnly: true,
-			sameSite: 'none', // allow cross-origin requests
-    		path: '/',        // ensure cookie applies to all routes
-    		domain: 'ina.gob.ar' // set your domain, if needed
+			maxAge: 3 * 60 * 60 * 1000
+			// secure: true,
+			// httpOnly: true,
+			// sameSite: 'none', // allow cross-origin requests
+    		// path: '/',        // ensure cookie applies to all routes
+    		// domain: 'ina.gob.ar' // set your domain, if needed
 		 }, 
 		 secret: 'secret', 
 		 key: "id",
