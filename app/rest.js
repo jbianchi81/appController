@@ -3,6 +3,7 @@
 require('./setGlobal')
 const request = require('request')
 var fs =require("fs")
+const path = require('path');
 // var sprintf = require('sprintf-js').sprintf, vsprintf = require('sprintf-js').vsprintf
 const express = require('express')
 const app = express()
@@ -391,6 +392,35 @@ app.get('/isAuthenticated',auth.isAuthenticated, (req,res)=>{  // passport.authe
 app.get('/isWriter', auth.isWriter, (req,res) => {
 	res.send('ok')
 })
+
+app.get('/active-sessions', auth.isAdmin, (req, res) => {
+  const sessionDir = path.join(__dirname, config.sessionDir)
+  fs.readdir(sessionDir, (err, files) => {
+    if (err) return res.status(500).json({ error: 'Failed to read sessions folder' });
+
+    const activeSessions = [];
+
+    files.forEach(file => {
+      const filePath = path.join(sessionDir, file);
+      try {
+        const data = fs.readFileSync(filePath, 'utf-8');
+        const session = JSON.parse(data);
+
+        if (session.user) {
+          activeSessions.push({
+            id: file,
+            user: session.user,
+            expires: session.cookie?.expires
+          });
+        }
+      } catch (e) {
+        // ignore corrupted or invalid session files
+      }
+    });
+
+    res.json(activeSessions);
+  });
+});
 
 /////////////////////////////////////////////////////////////////
 
