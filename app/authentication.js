@@ -11,7 +11,10 @@ module.exports = function (app,config,pool) {   // needs: app.use(express.urlenc
 
 	var module = {}
 	app.use(session({
-		cookie: { expires: 10800000, secure: false }, 
+		cookie: {
+			maxAge: 3 * 60 * 60 * 1000,
+			secure: (config.rest.secure) ? true : false
+		}, 
 		secret: 'secret', 
 		key: "id",
 		genid: (req) => {
@@ -26,7 +29,6 @@ module.exports = function (app,config,pool) {   // needs: app.use(express.urlenc
 			}
 		},
 		store: new FileStore({logFn: function(){},path:"../appController/sessions"}),
-		resave: false,
 		resave: false,
 		saveUninitialized: false,
 		rolling: true
