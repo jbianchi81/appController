@@ -11,9 +11,9 @@ module.exports = function (app,config,pool) {   // needs: app.use(express.urlenc
 
 	var module = {}
 	app.use(session({
-		 cookie: { expires: 10800000 }, 
-		 secret: 'secret', 
-		 key: "id",
+		cookie: { expires: 10800000, secure: false }, 
+		secret: 'secret', 
+		key: "id",
 		genid: (req) => {
 			if(config.verbose) {
 				console.log('Inside session middleware genid function')
@@ -26,7 +26,7 @@ module.exports = function (app,config,pool) {   // needs: app.use(express.urlenc
 			}
 		},
 		store: new FileStore({logFn: function(){},path:"../appController/sessions"}),
-		resave: true,
+		resave: false,
 		saveUninitialized: false,
 		rolling: true
 	}));
@@ -187,23 +187,22 @@ module.exports = function (app,config,pool) {   // needs: app.use(express.urlenc
 	passport.serializeUser(function(user, done) {
 		done(null, user.id);
 	});
-	passport.deserializeUser(function(id, done) {
-		//~ console.log({id:id})
-		module.User.findById(id)
-		.then(user=>{
-			//~ console.log({user:user})
-			if(user) {
-				user.authenticated = true
-				done(null, user);
-			} else {
-				console.error("User not found")
-				done(null,null)
-				// done(new Error("user not found"),null)
-			}
-		})
-		.catch(e=>{
+	passport.deserializeUser(async function(id, done) {
+		// console.debug("deserializing user with id: " + id)
+		try {
+			var user = await module.User.findById(id)
+		} catch (e) {
 			done(new Error(e),null)
-		})
+		}
+		//~ console.log({user:user})
+		if(user) {
+			user.authenticated = true
+			done(null, user);
+		} else {
+			console.error("User not found")
+			done(null,null)
+			// done(new Error("user not found"),null)
+		}
 	}); 
 
 	// my custom middleware

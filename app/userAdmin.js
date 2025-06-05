@@ -152,8 +152,8 @@ internal.deleteUser = async function (req,res) {
 
 internal.viewUser = function (req,res) {
     var username = req.params.username
-    if(username != req.user.username) {
-        if(req.user.role!="admin") {
+    if(!req.user || username != req.user.username) {
+        if(!config.rest.skip_authentication && (!req.user || req.user.role!="admin")) {
             res.status(408).send("Must be admin to enter this user's config")
             return
         }
@@ -167,7 +167,7 @@ internal.viewUser = function (req,res) {
             res.status(404).send("user not found")
             return
         }
-        var data = {user:result.rows[0],loggedAs: req.user.username, isAdmin: (req.user.role == "admin"), protected: (req.user.role != "admin" && result.rows[0].protected), base_url: config.rest.base_url}
+        var data = {user:result.rows[0],loggedAs: (req.user) ? req.user.username : undefined, isAdmin: (req.user && req.user.role == "admin"), protected: ((!req.user || req.user.role != "admin") && result.rows[0].protected), base_url: config.rest.base_url}
         res.render('usuario',data)
     })
     .catch(e=>{
@@ -179,10 +179,11 @@ internal.viewUsers = function (req,res) {
     pool.query("SELECT id,name username,role from users order by id")
     .then(result=>{
         if(result.rows.length==0) {
-            res.status(404).send("users not found")
-            return
+            // res.status(404).send("users not found")
+            console.debug("No users found")
+            // return
         }
-        var data = {users:result.rows,loggedAs: req.user.username, base_url: config.rest.base_url}
+        var data = {users:result.rows,loggedAs: (req.user) ? req.user.username : undefined, base_url: config.rest.base_url}
         res.render('usuarios',data)
     })
     .catch(e=>{
@@ -192,7 +193,7 @@ internal.viewUsers = function (req,res) {
 }
 
 internal.newUserForm = function(req,res) {
-    var data = {loggedAs: req.user.username, base_url: config.rest.base_url}
+    var data = {loggedAs: (req.user) ? req.user.username : undefined, base_url: config.rest.base_url}
     res.render('usuarionuevo',data)
 }
 

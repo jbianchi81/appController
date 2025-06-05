@@ -50,8 +50,9 @@
 			}
 			$("body").css("cursor","default")
             console.log({response:response})
-			alert("User " + response[0].name + " created")
-            window.location.href="usuarios/" + response[0].name
+            const created_user = (Array.isArray(response)) ? response[0] : response
+			alert("User " + created_user.name + " created")
+            window.location.href="usuarios/" + created_user.name
 			return
 		})			
 		.fail( (xhr, status, error)=>{
