@@ -3,6 +3,7 @@
 require('./setGlobal')
 const request = require('request')
 var fs =require("fs")
+const path = require('path');
 // var sprintf = require('sprintf-js').sprintf, vsprintf = require('sprintf-js').vsprintf
 const express = require('express')
 const app = express()
@@ -290,7 +291,7 @@ app.post('/login',passport.authenticate('local'),(req,res)=>{
 	console.log("inside login post")
 	console.log({user:req.user})
 	if(req.headers['content-type'] == "application/x-www-form-urlencoded" || req.headers['content-type'] == "multipart/form-data") {
-		var path = (req.user.role == "admin") ? "apps" : "usuarios/" + req.user.username// (req.query) ? (req.query.path) ? req.query.path : "apps"  : "apps"
+		var path = (req.query && req.query.redirected && req.query.path) ? req.query.path : (req.user.role == "admin") ? "apps" : "usuarios/" + req.user.username// (req.query) ? (req.query.path) ? req.query.path : "apps"  : "apps"
 		console.log("redirecting to " + path)
 		// var query = {}
 		// Object.keys(req.query).forEach(key=> {
@@ -381,6 +382,45 @@ app.get('/usuarios',auth.isAdminView, (req,res)=>{
 app.get('/usuarionuevo',auth.isAdminView,(req,res)=>{
 	userAdmin.newUserForm(req,res)
 })
+
+// is authenticated api
+
+app.get('/isAuthenticated',auth.isAuthenticated, (req,res)=>{  // passport.authenticate('local'),
+	res.send('ok')
+})
+
+app.get('/isWriter', auth.isWriter, (req,res) => {
+	res.send('ok')
+})
+
+app.get('/active-sessions', auth.isAdmin, (req, res) => {
+  const sessionDir = path.join(__dirname, config.sessionDir)
+  fs.readdir(sessionDir, (err, files) => {
+    if (err) return res.status(500).json({ error: 'Failed to read sessions folder' });
+
+    const activeSessions = [];
+
+    files.forEach(file => {
+      const filePath = path.join(sessionDir, file);
+      try {
+        const data = fs.readFileSync(filePath, 'utf-8');
+        const session = JSON.parse(data);
+
+        if (session.user) {
+          activeSessions.push({
+            id: file,
+            user: session.user,
+            expires: session.cookie?.expires
+          });
+        }
+      } catch (e) {
+        // ignore corrupted or invalid session files
+      }
+    });
+
+    res.json(activeSessions);
+  });
+});
 
 /////////////////////////////////////////////////////////////////
 

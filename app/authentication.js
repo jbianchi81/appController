@@ -27,6 +27,7 @@ module.exports = function (app,config,pool) {   // needs: app.use(express.urlenc
 		},
 		store: new FileStore({logFn: function(){},path:"../appController/sessions"}),
 		resave: false,
+		resave: false,
 		saveUninitialized: false,
 		rolling: true
 	}));
