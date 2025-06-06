@@ -16,7 +16,8 @@ module.exports = function (app,config,pool) {   // needs: app.use(express.urlenc
 	app.use(session({
 		cookie: {
 			maxAge: 3 * 60 * 60 * 1000,
-			secure: (config.rest.secure) ? true : false
+			secure: (config.rest.secure) ? true : false,
+			sameSite: 'lax'
 		}, 
 		secret: 'secret', 
 		key: "id",
