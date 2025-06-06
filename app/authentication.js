@@ -10,7 +10,7 @@ module.exports = function (app,config,pool) {   // needs: app.use(express.urlenc
 	const redirect_url = (config.rest.redirect_url) ? config.rest.redirect_url : "login"
 
 	if(config.rest.secure) {
-		app.use('trust proxy',1)
+		app.set('trust proxy',1)
 	}
 	var module = {}
 	app.use(session({
