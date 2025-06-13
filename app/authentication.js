@@ -31,7 +31,7 @@ module.exports = function (app,config,pool) {   // needs: app.use(express.urlenc
 				return uuid() // use UUIDs for session IDs
 			}
 		},
-		store: new FileStore({logFn: function(){},path:"../appController/sessions"}),
+		store: new FileStore({logFn: function(){},path: config.rest.session_file_store || "../appController/sessions"}),
 		resave: false,
 		saveUninitialized: false,
 		rolling: true
