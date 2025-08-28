@@ -24,11 +24,13 @@
 		}
     },
 	"rest":{
+		"protocol": "http",
 		"port":3000,
 		"skip_authentication": false,
 		"base_url": "http://localhost:3000/"
 	},
 	"app_base_dir": "../",
-	"timeout": 20000
+	"timeout": 20000,
+	"node_command": "node"
 }
 
