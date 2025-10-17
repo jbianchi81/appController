@@ -30,7 +30,8 @@ internal.controller = class {
 	constructor(app_list,config) {
 		this.app_list = (app_list) ? app_list : {}
 		this.config = (config) ? config : {}
-        this.config.node_command = this.config.node_command ?? "node"
+                this.host = (config) ? (config.host) ? config.host : "localhost" : "localhost"
+                this.config.node_command = this.config.node_command ?? "node"
 	}
     // INICIA APLICACIÓN. SI YA ESTÁ CORRIENDO NO HACE NADA- DEVUELVE OBJETO {status:success,message:..STR..} O TIRA ERROR
 	startApp(app) {
@@ -161,9 +162,9 @@ internal.controller = class {
 	checkApp(app) {
 		// var test_url = server_url  + this.app_list[app].webdir
 		return new Promise ( (resolve, reject) => {
-			// console.log("Realizando solicitud de prueba a localhost:" + this.app_list[app].port + this.app_list[app].testpath)
+			// console.log("Realizando solicitud de prueba a this.host:" + this.app_list[app].port + this.app_list[app].testpath)
 			const req = http.get({
-				 hostname: 'localhost',
+				 hostname: this.host,
 				 port: this.app_list[app].port,
 				 path: this.app_list[app].testpath,
 				 method: 'GET',
@@ -211,9 +212,9 @@ internal.controller = class {
     checkAppStatus(app,timeout=8000) {
 		// var test_url = server_url  + this.app_list[app].webdir
 		return new Promise ( (resolve, reject) => {
-			// console.log("Realizando solicitud de prueba a localhost:" + this.app_list[app].port + this.app_list[app].testpath)
+			// console.log("Realizando solicitud de prueba a host:" + this.app_list[app].port + this.app_list[app].testpath)
 			const req = http.get({
-				 hostname: 'localhost',
+				 hostname: this.host,
 				 port: this.app_list[app].port,
 				 path: this.app_list[app].testpath,
 				 method: 'GET',
@@ -325,7 +326,7 @@ internal.controller = class {
 			console.error("Error: no existe la app indicada")
 			throw "Error: no existe la app indicada"
 		}
-		return axios.get("http://localhost:" + this.app_list[app].port + "/exit",{headers: {"Authorization": "Bearer " + this.config.user.token}})
+		return axios.get("http://" + this.host + ":" + this.app_list[app].port + "/exit",{headers: {"Authorization": "Bearer " + this.config.user.token}})
 		.then(response=>{
 			//~ console.log(`statusCode: ${res.statusCode}`)
 			if(!response) {
