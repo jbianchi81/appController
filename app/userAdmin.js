@@ -29,18 +29,18 @@ internal.createUser = function(req,res) {    // ?password=&role=reader
         token: token
     })
     return user.create()
-       .then(users=>{
+       .then(user=>{
         if(req.headers['content-type'] == "multipart/form-data" || req.headers['content-type'] == "application/x-www-form-urlencoded") {
-            if(users[0]) {
-                console.log(users[0])
-                var data = users[0]
+            if(user) {
+                console.log(user)
+                var data = user
                 data.base_url = config.rest.base_url
                 res.render('user_updated',data)
             } else {
                 res.status(400).send("Error: no user updated")
             }
         } else {
-            res.send(users)
+            res.send(user)
         }
     })
     .catch(e=>{
