@@ -7,7 +7,7 @@ const CSV = require('csv-string')
 const { baseModel } = require('../../alerta5DBIO/app/baseModel')
 // API
 
-internal.getUsers = function() {
+internal.getUsers = function(req,res) {
     return pool.query("SELECT id,name,role from users order by id")
     .then(result=>{
         res.send(result.rows)
