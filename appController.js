@@ -95,12 +95,12 @@ program
 		Object.keys(app_list).forEach( app=>{
 			controller.checkAppStatus(app)
 			.then(response=>{
-				if(response.statusCode == 200) {
-					console.log("La aplicación " + app + " está funcionando en el puerto " + app_list[app].port)
+				if(response.statusCode < 400) {
+					console.log("La aplicación " + app + " está funcionando en el puerto " + app_list[app].port + ". statusCode: " + response.statusCode)
 				} else if(response.statusCode == 504) {
-					console.log("La aplicación " + app + " en el puerto " + app_list[app].port + " no responde (timeout)")
+					console.log("La aplicación " + app + " en el puerto " + app_list[app].port + " no responde (504 timeout)")
 				} else {
-					console.log("La aplicación " + app + " NO está funcionando")
+					console.log("La aplicación " + app + " NO está funcionando. StatusCode: " + response.statusCode)
 				}
 			})
 			.catch(e=>{
